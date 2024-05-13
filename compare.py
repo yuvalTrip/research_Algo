@@ -105,7 +105,7 @@ def compare_solution_methods():
     plt.title('Comparison of Solution Methods')
     plt.legend()
     plt.savefig("comparison.png")  # after you plot the graphs, save them to a file and upload it separately.
-    #plt.show() # this should show the plot on your screen
+    plt.show() # this should show the plot on your screen
 
 
 if __name__ == '__main__':
