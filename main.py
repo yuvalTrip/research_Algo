@@ -1,64 +1,129 @@
-def deep_sorted(data):
-    """
-      Returns a string describing the sorted structure of the given deep data structure.
+from itertools import permutations
 
-      The function sorts the elements at all levels:
-      - Values in lists, tuples, and sets are arranged in ascending order.
-      - Values in dictionaries are arranged in ascending order of keys.
 
-      Args:
-      data (dict, list, tuple, set, int, str, etc.): Input deep data structure.
+class TSPInputProcessor:
+    def __init__(self, input_data, input_type):
+        self.input_data = input_data
+        self.input_type = input_type
 
-      Returns:
-      str: String describing the sorted structure of the input data.
-
-      Examples:
-      >>> deep_sorted({"a": 5, "c": 6, "b": [1, 3, 2, 4]})
-      '{"a":5, "b":[1, 2, 3, 4], "c":6}'
-
-      >>> deep_sorted(((((1, 2), 3), 4), 5, 6))
-      '((((1, 2), 3), 4), 5, 6)'
-
-      >>> deep_sorted([(5, 4), {'a': 9, 'b': 7, 'c': 8}, {3, 2, 1}])
-      '[(4, 5), {"a":9, "b":7, "c":8}, {1, 2, 3}]'
-
-      >>> deep_sorted({'b': [3, 6, {'x': 9, 'y': 7}, 2, 7, 0], 'c': 7, 'a': 6})
-      '{"a":6, "b":[0, 2, 3, 6, 7, {"x":9,"y":7}], "c":7}'
-
-      >>> deep_sorted({})
-      '{}'
-
-      >>> deep_sorted([])
-      '[]'
-
-      >>> deep_sorted(())
-      '()'
-
-      >>> deep_sorted(set())
-      '{}'
-
-      >>> deep_sorted(5)
-      '5'
-
-      >>> deep_sorted("hello")
-      'hello'
-      """
-    if isinstance(data, dict):
-        sorted_dict = {}
-        for key in sorted(data.keys()):
-            sorted_dict[key] = deep_sorted(data[key])
-        return "{" + ", ".join(f'"{k}":{v}' for k, v in sorted_dict.items()) + "}"
-    elif isinstance(data, (list, tuple, set)):
-        sorted_data = sorted(map(deep_sorted, data))
-        if isinstance(data, tuple):
-            return "(" + ", ".join(sorted_data) + ")"
-        elif isinstance(data, set):
-            return "{" + ", ".join(sorted_data) + "}"
+    def process(self):
+        if self.input_type == 'distances_only':
+            return self.input_data
+        elif self.input_type == 'distances_with_names':
+            cities = list(self.input_data.keys())
+            size = len(cities)
+            distance_matrix = [[0] * size for _ in range(size)]
+            for i in range(size):
+                for j in range(size):
+                    if i != j:
+                        distance_matrix[i][j] = self.input_data[cities[i]][cities[j]]
+            return distance_matrix, cities
         else:
-            return "[" + ", ".join(sorted_data) + "]"
-    else:
-        return str(data)
+            raise ValueError("Invalid input type")
 
-if _name_ == '_main_':
-    x = eval(input())
-    print(deep_sorted(x))
+
+class TSPOutputProcessor:
+    def __init__(self, output_type):
+        self.output_type = output_type
+
+    def process(self, route, distance, cities=None):
+        if self.output_type == 'track':
+            if cities:
+                return [cities[i] for i in route], distance
+            else:
+                return route, distance
+        elif self.output_type == 'length':
+            return distance
+        else:
+            raise ValueError("Invalid output type")
+
+
+class TSPSolver:
+    def __init__(self, algorithm):
+        self.algorithm = algorithm
+
+    def solve(self, distance_matrix):
+        if self.algorithm == 'brute_force':
+            return self._brute_force(distance_matrix)
+        elif self.algorithm == 'nearest_neighbor':
+            return self._nearest_neighbor(distance_matrix)
+        else:
+            raise ValueError("Invalid algorithm")
+
+    def _brute_force(self, distance_matrix):
+        n = len(distance_matrix)
+        min_path = float('inf')
+        best_route = None
+        for perm in permutations(range(1, n)):
+            current_path = 0
+            k = 0
+            for i in perm:
+                current_path += distance_matrix[k][i]
+                k = i
+            current_path += distance_matrix[k][0]
+            if current_path < min_path:
+                min_path = current_path
+                best_route = (0,) + perm + (0,)
+        return best_route, min_path
+
+    def _nearest_neighbor(self, distance_matrix):
+        n = len(distance_matrix)
+        unvisited = set(range(1, n))
+        current = 0
+        route = [current]
+        total_distance = 0
+        while unvisited:
+            next_city = min(unvisited, key=lambda city: distance_matrix[current][city])
+            total_distance += distance_matrix[current][next_city]
+            current = next_city
+            route.append(current)
+            unvisited.remove(current)
+        total_distance += distance_matrix[current][0]
+        route.append(0)
+        return route, total_distance
+
+
+def TSPmainFunc(input_data, input_type, output_type, algorithm):
+    # Process input
+    processor = TSPInputProcessor(input_data, input_type)
+    processed_input = processor.process()
+
+    # If processed input has cities list, unpack it
+    if input_type == 'distances_with_names':
+        distance_matrix, cities = processed_input
+    else:
+        distance_matrix = processed_input
+        cities = None
+
+    # Solve TSP
+    solver = TSPSolver(algorithm)
+    route, distance = solver.solve(distance_matrix)
+
+    # Process output
+    output_processor = TSPOutputProcessor(output_type)
+    result = output_processor.process(route, distance, cities)
+    return result
+
+
+# Example usage
+if __name__ == "__main__":
+    import doctest
+
+    input_data2 = {
+        'A': {'B': 10, 'C': 15, 'D': 20},
+        'B': {'A': 10, 'C': 35, 'D': 25},
+        'C': {'A': 15, 'B': 35, 'D': 30},
+        'D': {'A': 20, 'B': 25, 'C': 30}
+    }
+    result = TSPmainFunc(input_data2, 'distances_with_names', 'track', 'brute_force')
+    print(result)  # Expected output: (['A', 'B', 'D', 'C', 'A'], 80)
+
+    input_data1 = [
+        [0, 10, 15, 20],
+        [10, 0, 35, 25],
+        [15, 35, 0, 30],
+        [20, 25, 30, 0]
+    ]
+    result = TSPmainFunc(input_data1, 'distances_only', 'length', 'brute_force')
+    print(result)  # Expected output: 80
+    doctest.testmod()
