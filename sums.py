@@ -1,7 +1,7 @@
 import heapq
 from heapq import heappop, heappush
 from itertools import takewhile, islice
-
+### To answer this problem, I got assistant GPT, my dad and my boyfriend.
 def sorted_subset_sums(S):
     """
     Yield all subset sums of a series S in ascending order.
@@ -27,6 +27,19 @@ def sorted_subset_sums(S):
 
     >>> len(list(takewhile(lambda x:x<=1000, sorted_subset_sums(list(range(90,100)) + list(range(920,1000))))))
     1104
+
+    >>> list(sorted_subset_sums([8,16,24]))
+    [0, 8, 16, 24, 24, 32, 40, 48]
+
+
+    >>> list(sorted_subset_sums([10]))
+    [0, 10]
+
+    >>> list(sorted_subset_sums([]))
+    [0]
+
+    >>> len(list(sorted_subset_sums([i for i in range(1, 10)])))
+    512
     """
     # Sort the input series
     S = sorted(S)
@@ -60,11 +73,11 @@ def sorted_subset_sums(S):
                 for s in list(seen):
                     if s[0] == new_sum:
                         seen.remove(s)
+
+
 # Doctests
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-
+    from itertools import takewhile, islice
     for i in eval(input()):
         print(i, end=", ")
 
