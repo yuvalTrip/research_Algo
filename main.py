@@ -1,77 +1,111 @@
-from typing import Callable, Any, List
-import tsp_output as out
-import tsp_algorithms as alg
-### To answer this problem, I got assistant GPT, my dad and my boyfriend.
+import openpyxl as openpyxl
+import pandas as pd
 
-# Function to solve the TSP using a specified algorithm and output type
-def solve_tsp(algorithm: Callable, distance_data: Any, outputtype: out.OutputType) -> Any:
+# Load the CSV files
+codes_for_questions = pd.read_csv("https://raw.githubusercontent.com/erelsgl-at-ariel/research-5784/main/06-python-databases/homework/codes_for_questions.csv")
+codes_for_answers = pd.read_csv("https://raw.githubusercontent.com/erelsgl-at-ariel/research-5784/main/06-python-databases/homework/codes_for_answers.csv")
+list_of_answers = pd.read_csv("https://raw.githubusercontent.com/erelsgl-at-ariel/research-5784/main/06-python-databases/homework/list_of_answers.csv")
+
+# print(list_of_answers)
+# writer = pd.ExcelWriter("df.xlsx")
+# list_of_answers.to_excel(writer)
+# writer._save()
+#
+# writer = pd.ExcelWriter("df0.xlsx")
+# codes_for_questions.to_excel(writer)
+# writer._save()
+#
+# writer = pd.ExcelWriter("df1.xlsx")
+# codes_for_answers.to_excel(writer)
+# writer._save()
+def support_in_one_party_elections(party: str) -> int:
     """
-    Function to solve the TSP using a specified algorithm and output type.
+    Returns the number of people who support a given party in the current election system (Q2).
+    Explanation about DB- in 'list_of_answers' db, there is column named 'Q2'- there are numbers between range
+    1 to 17- according parties ID as written in db 'codes_for_answers'.
+    So each get it ID , the choser choose 1 number according the party he chose.
 
-    Args:
-        algorithm (Callable): The algorithm to solve the TSP.
-        distance_data (Any): The distance data for the TSP.
-        outputtype (out.OutputType): The output type for the TSP solution.
+    >>> support_in_one_party_elections('מחל')
+    134
 
-    Returns:
-        Any: The result of the TSP solution.
+    >>> support_in_one_party_elections('פה')
+    109
 
-    Examples:
-        >>> input_data1 = [
-        ...     [0, 10, 15, 20],
-        ...     [10, 0, 35, 25],
-        ...     [15, 35, 0, 30],
-        ...     [20, 25, 30, 0]
-        ... ]
-        >>> solve_tsp(alg.nearest_neighbor, input_data1, out.Track)
-        [0, 1, 3, 2, 0]
-        >>> solve_tsp(alg.brute_force, input_data1, out.Track)
-        [0, 1, 3, 2, 0]
-        >>> solve_tsp(alg.nearest_neighbor, input_data1, out.TrackLength)
-        80
-        >>> solve_tsp(alg.brute_force, input_data1, out.TrackLength)
-        80
-
-        >>> input_data2 = {
-        ...     'A': {'B': 10, 'C': 15, 'D': 20},
-        ...     'B': {'A': 10, 'C': 35, 'D': 25},
-        ...     'C': {'A': 15, 'B': 35, 'D': 30},
-        ...     'D': {'A': 20, 'B': 25, 'C': 30}
-        ... }
-        >>> solve_tsp(alg.nearest_neighbor, input_data2, out.Track)
-        ['A', 'B', 'D', 'C', 'A']
-        >>> solve_tsp(alg.brute_force, input_data2, out.Track)
-        ['A', 'B', 'D', 'C', 'A']
-        >>> solve_tsp(alg.nearest_neighbor, input_data2, out.TrackLength)
-        80
-        >>> solve_tsp(alg.brute_force, input_data2, out.TrackLength)
-        80
-
-        >>> input_data3 = [
-        ...     [0, 2, 9, 10],
-        ...     [1, 0, 6, 4],
-        ...     [15, 7, 0, 8],
-        ...     [6, 3, 12, 0]
-        ... ]
-        >>> solve_tsp(alg.nearest_neighbor, input_data3, out.Track)
-        [0, 1, 3, 2, 0]
-        >>> solve_tsp(alg.brute_force, input_data3, out.Track)
-        [0, 2, 3, 1, 0]
-        >>> solve_tsp(alg.nearest_neighbor, input_data3, out.TrackLength)
-        33
-        >>> solve_tsp(alg.brute_force, input_data3, out.TrackLength)
-        21
+    >>> support_in_one_party_elections('שס')
+    13
     """
-    # Create the appropriate handler for the distance data
-    handler = outputtype.create_handler(distance_data)
-    # Get the list of cities from the distance data
-    cities = list(distance_data.keys()) if isinstance(distance_data, dict) else list(range(len(distance_data)))
-    # Solve the TSP using the specified algorithm
-    track = algorithm(handler, cities)
-    # Extract the output from the track using the specified output type
-    return outputtype.extract_output_from_track(handler, track)
+    q2_support = list_of_answers['Q2'] #get the correct column from the DB
+    party_code = codes_for_answers.loc[(codes_for_answers['Value'] == 'Q2') & (codes_for_answers['Label'].str.contains(party)), 'Code']
+    if party_code.empty:
+        return 0
+    return (q2_support == party_code.iloc[0]).sum()
 
-# Main block to test the TSP solution with different data sets and algorithms
-if __name__ == "__main__":
+    # First we will take the required column of Q3 according to the given code of the party
+    q3_req_column = f'Q3_{party}'
+
+    # Now we will count how many 1 values there are in this column.
+    count_ones = list_of_answers[q3_req_column].value_counts().get(1, 0)
+
+    return count_ones
+
+
+def support_in_multi_party_elections(party: str) -> int:
+    """
+    Returns the number of people who would support a given party in an alternative election system (Q3).
+
+    >>> support_in_multi_party_elections('1')
+    162
+
+    >>> support_in_multi_party_elections('2')
+    131
+
+    >>> support_in_multi_party_elections('3')
+    39
+    """
+    # First we will take the required column of Q3 according to the given code of the party
+    q3_req_column = f'Q3_{party}'
+
+    # Now we will count how many 1 values there are in this column.
+    count_ones = list_of_answers[q3_req_column].value_counts().get(1, 0)
+
+    return count_ones
+
+
+def parties_with_different_relative_order() -> list:
+    """
+    Returns a list of pairs of parties whose relative order is different between the two election methods.
+
+    >>> parties_with_different_relative_order()
+    [('מחל', 'פה'), ('שס', 'כן')]  # Replace with actual expected value
+    """
+    q2_support = list_of_answers['Q2'].value_counts().reset_index()
+    q2_support.columns = ['Code', 'Count']
+
+    q3_columns = [col for col in list_of_answers.columns if col.startswith('Q3')]
+    q3_support = list_of_answers[q3_columns].apply(pd.Series.value_counts).sum(axis=1).reset_index()
+    q3_support.columns = ['Code', 'Count']
+
+    q2_ranking = q2_support.sort_values(by='Count', ascending=False).reset_index(drop=True)
+    q3_ranking = q3_support.sort_values(by='Count', ascending=False).reset_index(drop=True)
+
+    q2_order = q2_ranking['Code'].tolist()
+    q3_order = q3_ranking['Code'].tolist()
+
+    different_orders = []
+    for i, q2_party in enumerate(q2_order):
+        for j, q3_party in enumerate(q3_order):
+            if q2_party != q3_party and q2_party in q3_order and q3_party in q2_order:
+                q2_index = q2_order.index(q3_party)
+                q3_index = q3_order.index(q2_party)
+                if q2_index < i and j < q3_index:
+                    different_orders.append((q2_party, q3_party))
+    return different_orders
+
+if __name__ == '__main__':
     import doctest
     doctest.testmod()
+    party = input("Enter party code or 'parties_with_different_relative_order': ")
+    if party == "parties_with_different_relative_order":
+        print(parties_with_different_relative_order())
+    else:
+        print(support_in_one_party_elections(party), support_in_multi_party_elections(party))
