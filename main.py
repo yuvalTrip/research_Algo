@@ -201,12 +201,15 @@ def parties_with_different_relative_order() -> list:
 
     # Calculate support in the alternative system (Q3)
     q3_columns = [col for col in list_of_answers.columns if col.startswith('Q3')]
-    q3_support = list_of_answers[q3_columns].apply(pd.Series.value_counts).fillna(0).sum(axis=1).reset_index()
+    q3_support = list_of_answers[q3_columns].apply(pd.Series.value_counts).fillna(0).iloc[1].reset_index()
     q3_support.columns = ['Code', 'Count']
 
-    # Ensure Code columns are strings
-    q2_support['Code'] = q2_support['Code'].astype(str)
-    q3_support['Code'] = q3_support['Code'].astype(str)
+    # Extract numerical part from 'Q3_X' to match with q2_support 'Code'
+    q3_support['Code'] = q3_support['Code'].str.extract('_(\d+)').astype(int)
+
+    # Ensure Code columns are integers
+    q2_support['Code'] = q2_support['Code'].astype(int)
+    q3_support['Code'] = q3_support['Code'].astype(int)
 
     q2_ranking = q2_support.sort_values(by='Count', ascending=False).reset_index(drop=True)
     q3_ranking = q3_support.sort_values(by='Count', ascending=False).reset_index(drop=True)
@@ -214,34 +217,53 @@ def parties_with_different_relative_order() -> list:
     q2_order = q2_ranking['Code'].tolist()
     q3_order = q3_ranking['Code'].tolist()
 
-    # Convert q3_order to a list of integers
-    q3_order_int = [int(float(code)) for code in q3_order]
-    print (q3_order_int)
-
     different_orders = []
     for i in range(len(q2_order)):
         for j in range(i + 1, len(q2_order)):
             q2_party1, q2_party2 = q2_order[i], q2_order[j]
-            # Convert to float and then to int
-            q2_party1 = int(float(q2_party1))
-            q2_party2 = int(float(q2_party2))
-
-            # Get indices in q3_order_int
-            q3_index1, q3_index2 = q3_order_int.index(q2_party1), q3_order_int.index(q2_party2)
-            if q3_index1 > q3_index2:
-                party1 = get_party_code(q2_party1)
-                party2 = get_party_code(q2_party2)
-                if (party1, party2) not in different_orders and (party2, party1) not in different_orders:
-                    different_orders.append((party1, party2))
+            if q2_party1 in q3_order and q2_party2 in q3_order:
+                q3_index1, q3_index2 = q3_order.index(q2_party1), q3_order.index(q2_party2)
+                if q3_index1 > q3_index2:
+                    party1 = get_party_name(q2_party1)
+                    party2 = get_party_name(q2_party2)
+                    if (party1, party2) not in different_orders and (party2, party1) not in different_orders:
+                        different_orders.append((party1, party2))
 
     return different_orders
-
-
+#
+# def parties_with_different_relative_order() -> tuple:
+#     # Extracting votes from Q2
+#     votes_current_method = list_of_answers['Q2'].value_counts().sort_index()
+#
+#     # Extracting votes from Q3_ columns
+#     q3_columns = [col for col in list_of_answers.columns if col.startswith('Q3_')]
+#     votes_alternative_method = list_of_answers[q3_columns].sum()
+#
+#     # Create DataFrames for easier comparison
+#     current_method_df = pd.DataFrame(votes_current_method).reset_index().rename(columns={'index': 'Code', 'Q2': 'Votes_Current'})
+#     alternative_method_df = pd.DataFrame(votes_alternative_method).reset_index().rename(columns={'index': 'Code', 0: 'Votes_Alternative'})
+#
+#     # Merge with codes_for_answers to get party names
+#     merged_df = pd.merge(current_method_df, alternative_method_df, on='Code')
+#     merged_df = pd.merge(merged_df, codes_for_answers[['Code', 'Label']], on='Code')
+#
+#     # Sort by votes in each method to get ranking
+#     merged_df['Rank_Current'] = merged_df['Votes_Current'].rank(ascending=False, method='min')
+#     merged_df['Rank_Alternative'] = merged_df['Votes_Alternative'].rank(ascending=False, method='min')
+#
+#     # Find pairs with different relative order
+#     merged_df = merged_df.sort_values(by='Rank_Current')
+#     rank_diff = (merged_df['Rank_Current'][:, None] < merged_df['Rank_Current'][None, :]) & \
+#                 (merged_df['Rank_Alternative'][:, None] > merged_df['Rank_Alternative'][None, :])
+#
+#     if rank_diff.any():
+#         idx = rank_diff.idxmax()
+#         return merged_df.iloc[idx[0]]['Label'], merged_df.iloc[idx[1]]['Label']
+#
+#     return None
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    party = input("Enter party code or 'parties_with_different_relative_order': ")
-    if party == "parties_with_different_relative_order":
-        print(parties_with_different_relative_order())
-    else:
-        print(support_in_one_party_elections(party), support_in_multi_party_elections(party))
+        party = input()
+        if party == "parties_with_different_relative_order":
+            print(parties_with_different_relative_order())
+        else:
+            print(support_in_one_party_elections(party), support_in_multi_party_elections(party))
