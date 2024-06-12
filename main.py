@@ -33,163 +33,59 @@ def support_in_one_party_elections(party: str) -> int:
 
     >>> support_in_one_party_elections('שס')
     13
+
     >>> support_in_one_party_elections('כן')
     33
+
     >>> support_in_one_party_elections('ב')
-    134
+    54
+
     >>> support_in_one_party_elections('אמת')
     34
+
     >>> support_in_one_party_elections('ל')
-    134
+    14
+
     >>> support_in_one_party_elections('ת')
-    134
+    26
     >>> support_in_one_party_elections('מרצ')
     19
     """
-    q2_support = list_of_answers['Q2'] #get the correct column from the DB
-    party_code = codes_for_answers.loc[(codes_for_answers['Value'] == 'Q2') & (codes_for_answers['Label'].str.contains(party)), 'Code']
+    q2_support = list_of_answers['Q2']  # Get the correct column from the DB
+    # print(codes_for_answers['Label'].unique())  # Debugging: print all unique labels
+    party_code = codes_for_answers.loc[(codes_for_answers['Value'] == 'Q2') & (codes_for_answers['Label'].str.startswith(party)), 'Code']
+    #print(f"Party: {party}, Party Code: {party_code}")  # Debugging
     if party_code.empty:
         return 0
-    return (q2_support == party_code.iloc[0]).sum()
-
-
-def get_party_code(party_name: str) -> int:
-    """
-    Returns the numerical code of the party given its name.
-
-    >>> get_party_code('מחל')
-    1
-
-    >>> get_party_code('פה')
-    2
-    """
-    for index, row in codes_for_answers.iterrows():
-        if row['Label'].startswith(party_name):
-            return row['Code']
-    return "Party name not found"
+    support_count = (q2_support == party_code.iloc[0]).sum()
+    #print(f"Support Count for Party '{party}' (Code: {party_code.iloc[0]}): {support_count}")  # Debugging
+    return support_count
 
 
 def support_in_multi_party_elections(party: str) -> int:
     """
     Returns the number of people who would support a given party in an alternative election system (Q3).
 
-    >>> support_in_multi_party_elections('1')
+    >>> support_in_multi_party_elections('מחל')
     162
 
-    >>> support_in_multi_party_elections('2')
+    >>> support_in_multi_party_elections('פה')
     131
-
-    >>> support_in_multi_party_elections('3')
+    >>> support_in_multi_party_elections('שס')
     39
-
-    >>> support_in_multi_party_elections('4')
+    >>> support_in_multi_party_elections('כן')
     93
-    >>> support_in_multi_party_elections('5')
-    101
-    >>> support_in_multi_party_elections('6')
+    >>> support_in_multi_party_elections('אמת')
     85
-    >>> support_in_multi_party_elections('8')
+    >>> support_in_multi_party_elections('ל')
     38
-    >>> support_in_multi_party_elections('11')
+    >>> support_in_multi_party_elections('ת')
     61
-    >>> support_in_multi_party_elections('12')
+    >>> support_in_multi_party_elections('מרצ')
     66
     """
-    # First we will take the required column of Q3 according to the given code of the party
-    q3_req_column = f'Q3_{party}'
-
-    # Now we will count how many 1 values there are in this column.
-    count_ones = list_of_answers[q3_req_column].value_counts().get(1, 0)
-
-    return count_ones
-
-def get_party_name(party_code: int) -> str:
-    """
-    Helper function for the last function.
-    Returns the name of the party given its code.
-
-    >>> get_party_name(1)
-    'מחל'
-
-    >>> get_party_name(2)
-    'פה'
-
-    >>> get_party_name(3)
-    'שס'
-
-    >>> get_party_name(4)
-    'כן'
-
-    >>> get_party_name(5)
-    'ב'
-    """
-    party_label = codes_for_answers.loc[codes_for_answers['Code'] == party_code, 'Label']
-    if not party_label.empty:
-        return party_label.values[0].split(' - ')[0]
-    else:
-        return "Party code not found"
-#
-# def parties_with_different_relative_order() -> list:
-#     """
-#     Returns a list of pairs of parties whose relative order is different between the two election methods.
-#
-#     >>> parties_with_different_relative_order()
-#     [('ל', 'פה'), ('שס', 'כן')]
-#     [('מחל', 'פה'), ('ל', 'ת')]
-#     """
-#     #ל Q2=134
-#     #ת Q2=134
-#
-#     # ל Q3=38
-#     # ת Q3=61
-#
-#     for num in range(1,18):
-#         result_q3=support_in_multi_party_elections(str(num))
-#         party_name_=get_party_name(num)
-#         result_q2=support_in_one_party_elections(party_name_)
-# # ..............
-
-    # # Calculate support in the current system (Q2)
-    # q2_support = list_of_answers['Q2'].value_counts().reset_index()
-    # q2_support.columns = ['Code', 'Count']
-    #
-    # # Calculate support in the alternative system (Q3)
-    # q3_columns = [col for col in list_of_answers.columns if col.startswith('Q3')]
-    # q3_support = list_of_answers[q3_columns].apply(pd.Series.value_counts).sum(axis=1).reset_index()
-    # q3_support.columns = ['Code', 'Count']
-    #
-    # # Rank the parties based on support in Q2
-    # q2_ranking = q2_support.sort_values(by='Count', ascending=False).reset_index(drop=True)
-    # q3_ranking = q3_support.sort_values(by='Count', ascending=False).reset_index(drop=True)
-    #
-    # q2_order = q2_ranking['Code'].tolist()
-    # q3_order = q3_ranking['Code'].tolist()
-    #
-    # different_orders = []
-    # for i, q2_party in enumerate(q2_order):
-    #     for j, q3_party in enumerate(q3_order):
-    #         if q2_party != q3_party and q2_party in q3_order and q3_party in q2_order:
-    #             q2_index = q2_order.index(q3_party)
-    #             q3_index = q3_order.index(q2_party)
-    #             if q2_index < i and j < q3_index:
-    #                 different_orders.append((q2_party, q3_party))
-    # return different_orders
-
-def get_party_code(party_code: int) -> str:
-    """
-    Returns the party code (letters on the ballot) given its numerical code.
-
-    >>> get_party_code(1)
-    'מחל'
-
-    >>> get_party_code(2)
-    'פה'
-    """
-    party_label = codes_for_answers.loc[codes_for_answers['Code'] == party_code, 'Label']
-    if not party_label.empty:
-        return party_label.values[0].split(' - ')[0]
-    else:
-        return "Party code not found"
+    questionName = codes_for_questions.loc[codes_for_questions['Label'].str.startswith(party, na=False), 'Variable'].values[0]
+    return int(list_of_answers[questionName].sum())
 
 def parties_with_different_relative_order() -> list:
     """
@@ -230,37 +126,32 @@ def parties_with_different_relative_order() -> list:
                         different_orders.append((party1, party2))
 
     return different_orders
-#
-# def parties_with_different_relative_order() -> tuple:
-#     # Extracting votes from Q2
-#     votes_current_method = list_of_answers['Q2'].value_counts().sort_index()
-#
-#     # Extracting votes from Q3_ columns
-#     q3_columns = [col for col in list_of_answers.columns if col.startswith('Q3_')]
-#     votes_alternative_method = list_of_answers[q3_columns].sum()
-#
-#     # Create DataFrames for easier comparison
-#     current_method_df = pd.DataFrame(votes_current_method).reset_index().rename(columns={'index': 'Code', 'Q2': 'Votes_Current'})
-#     alternative_method_df = pd.DataFrame(votes_alternative_method).reset_index().rename(columns={'index': 'Code', 0: 'Votes_Alternative'})
-#
-#     # Merge with codes_for_answers to get party names
-#     merged_df = pd.merge(current_method_df, alternative_method_df, on='Code')
-#     merged_df = pd.merge(merged_df, codes_for_answers[['Code', 'Label']], on='Code')
-#
-#     # Sort by votes in each method to get ranking
-#     merged_df['Rank_Current'] = merged_df['Votes_Current'].rank(ascending=False, method='min')
-#     merged_df['Rank_Alternative'] = merged_df['Votes_Alternative'].rank(ascending=False, method='min')
-#
-#     # Find pairs with different relative order
-#     merged_df = merged_df.sort_values(by='Rank_Current')
-#     rank_diff = (merged_df['Rank_Current'][:, None] < merged_df['Rank_Current'][None, :]) & \
-#                 (merged_df['Rank_Alternative'][:, None] > merged_df['Rank_Alternative'][None, :])
-#
-#     if rank_diff.any():
-#         idx = rank_diff.idxmax()
-#         return merged_df.iloc[idx[0]]['Label'], merged_df.iloc[idx[1]]['Label']
-#
-#     return None
+
+def get_party_name(party_code: int) -> str:
+    """
+    Returns the name of the party given its code.
+
+    >>> get_party_name(1)
+    'מחל'
+
+    >>> get_party_name(2)
+    'פה'
+
+    >>> get_party_name(3)
+    'שס'
+
+    >>> get_party_name(4)
+    'כן'
+
+    >>> get_party_name(5)
+    'ב'
+    """
+    party_label = codes_for_answers.loc[codes_for_answers['Code'] == party_code, 'Label']
+    if not party_label.empty:
+        return party_label.values[0].split(' - ')[0]
+    else:
+        return "Party code not found"
+
 if __name__ == '__main__':
         party = input()
         if party == "parties_with_different_relative_order":
